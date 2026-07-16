@@ -9,8 +9,7 @@ var CATEGORIAS = [
   { id: 'comida', nombre: 'Comida', icono: '\u{1F6D2}' },
   { id: 'ocio', nombre: 'Ocio', icono: '\u{1F389}' },
   { id: 'hijo', nombre: 'Hijo', icono: '\u{1F476}' },
-  { id: 'otros', nombre: 'Otros', icono: '\u{1F4E6}' },
-  { id: 'fifty', nombre: 'Fifty', icono: '<b style="color:#2ecc71">50</b>' }
+  { id: 'otros', nombre: 'Otros', icono: '\u{1F4E6}' }
 ];
 
 var MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -26,6 +25,7 @@ var editingGastoId = null;
 var currentView = 'gastos';
 var filterMes = new Date().getMonth();
 var filterAnyo = currentYear;
+var fiftyMonths = {};
 
 // ========== STORAGE ==========
 function loadGastosLocal() {
@@ -114,6 +114,7 @@ function supabaseOnChange(payload) {
   var incoming = payload.new.data;
   if (!incoming.gastos) return;
   gastos = incoming.gastos;
+  fiftyMonths = incoming.fiftyMonths || {};
   calcNextId();
   cacheGastos(gastos);
   refreshCurrentView();
@@ -153,6 +154,7 @@ function loadGastos() {
   return supabaseLoad().then(function(data) {
     if (data && data.gastos && data.gastos.length > 0) {
       gastos = data.gastos;
+      fiftyMonths = data.fiftyMonths || {};
       calcNextId();
       cacheGastos(gastos);
       return true;
@@ -179,7 +181,7 @@ function calcNextId() {
 
 function saveToSupabase() {
   cacheGastos(gastos);
-  return supabaseSave({ gastos: gastos });
+  return supabaseSave({ gastos: gastos, fiftyMonths: fiftyMonths });
 }
 
 // ========== HELPERS ==========
@@ -196,79 +198,6 @@ function getMesActual() {
 
 function getAnyoActual() {
   return currentYear;
-}
-
-// ========== FIFTY AUTO-CALC ==========
-function isFiftyCategory() {
-  var sel = document.querySelector('#categoriaGrid .categoria-option.selected');
-  return sel && sel.dataset.categoria === 'fifty';
-}
-
-function calcFiftyBalance(mes, anyo) {
-  var filtered = gastos.filter(function(g) {
-    return g.mes === mes && g.anyo === anyo;
-  });
-  var totalSinFifty = 0, juanSinFifty = 0;
-  var fiftyPorMar = 0, fiftyPorJuan = 0;
-  for (var i = 0; i < filtered.length; i++) {
-    if (filtered[i].categoria === 'fifty') {
-      if (filtered[i].pagador === 'Mar') fiftyPorMar += filtered[i].importe;
-      else fiftyPorJuan += filtered[i].importe;
-    } else {
-      totalSinFifty += filtered[i].importe;
-      if (filtered[i].pagador === 'Juan') juanSinFifty += filtered[i].importe;
-    }
-  }
-  var mitad = totalSinFifty / 2;
-  if (totalSinFifty === 0) return null;
-  var deudaNeta = (juanSinFifty - mitad) - fiftyPorMar + fiftyPorJuan;
-  if (Math.abs(deudaNeta) < 0.01) return null;
-  if (deudaNeta > 0) return { importe: deudaNeta, pagador: 'Mar' };
-  return { importe: -deudaNeta, pagador: 'Juan' };
-}
-
-function setFiftyFields() {
-  var mes = parseInt(document.getElementById('inputMes').value);
-  var anyo = parseInt(document.getElementById('inputAnyo').value);
-  var balance = calcFiftyBalance(mes, anyo);
-
-  var importeInput = document.getElementById('inputImporte');
-  var conceptoInput = document.getElementById('inputConcepto');
-  var pagBtns = document.querySelectorAll('#pagadorSelect .pagador-option');
-
-  if (!balance) {
-    importeInput.value = '';
-    importeInput.disabled = true;
-    importeInput.placeholder = 'Est\u00E1is empatados';
-    conceptoInput.value = 'Fifty';
-    conceptoInput.disabled = true;
-    pagBtns.forEach(function(b) { b.classList.remove('selected'); b.style.pointerEvents = 'none'; });
-    return;
-  }
-
-  importeInput.value = balance.importe.toFixed(2);
-  importeInput.disabled = true;
-  importeInput.placeholder = '0.00';
-  conceptoInput.value = 'Fifty';
-  conceptoInput.disabled = true;
-  pagBtns.forEach(function(b) { b.classList.remove('selected'); b.style.pointerEvents = 'none'; });
-  var pagBtn = document.querySelector('#pagadorSelect .pagador-option[data-pagador="' + balance.pagador + '"]');
-  if (pagBtn) pagBtn.classList.add('selected');
-}
-
-function clearFiftyFields() {
-  var importeInput = document.getElementById('inputImporte');
-  var conceptoInput = document.getElementById('inputConcepto');
-  var pagBtns = document.querySelectorAll('#pagadorSelect .pagador-option');
-
-  importeInput.disabled = false;
-  importeInput.placeholder = '0.00';
-  if (importeInput.value === '' || conceptoInput.value === 'Fifty') {
-    importeInput.value = '';
-    conceptoInput.value = '';
-  }
-  conceptoInput.disabled = false;
-  pagBtns.forEach(function(b) { b.style.pointerEvents = ''; });
 }
 
 // ========== GASTO CRUD ==========
@@ -492,48 +421,53 @@ function renderGastos() {
 }
 
 // ========== RENDER: BALANCE ==========
+function getMonthKey(mes, anyo) {
+  return anyo + '-' + mes;
+}
+
+function toggleFiftyMonth() {
+  var key = getMonthKey(filterMes, filterAnyo);
+  if (fiftyMonths[key]) {
+    delete fiftyMonths[key];
+  } else {
+    fiftyMonths[key] = true;
+  }
+  saveToSupabase().then(function() {
+    renderBalance();
+  });
+}
+
+// ========== RENDER: BALANCE ==========
 function renderBalance() {
   var container = document.getElementById('balanceContent');
   var filtered = getFilteredGastos();
 
-  // Totals including all categories
   var total = 0, juanTotal = 0, marTotal = 0;
-  // Non-Fifty totals for split calculation
-  var totalSinFifty = 0, juanSinFifty = 0, fifties = [];
-
   for (var i = 0; i < filtered.length; i++) {
     var g = filtered[i];
     total += g.importe;
     if (g.pagador === 'Juan') juanTotal += g.importe;
     else marTotal += g.importe;
-
-    if (g.categoria === 'fifty') {
-      fifties.push(g);
-    } else {
-      totalSinFifty += g.importe;
-      if (g.pagador === 'Juan') juanSinFifty += g.importe;
-    }
   }
 
-  var gastosCount = filtered.filter(function(g) { return g.categoria !== 'fifty'; }).length;
-  var mitad = totalSinFifty / 2;
-  var deudaBase = juanSinFifty - mitad; // >0: Mar owes Juan, <0: Juan owes Mar
-
-  // Net Fifty settlements
-  var fiftyPorMar = 0, fiftyPorJuan = 0;
-  for (var f = 0; f < fifties.length; f++) {
-    if (fifties[f].pagador === 'Mar') fiftyPorMar += fifties[f].importe;
-    else fiftyPorJuan += fifties[f].importe;
-  }
-  var deudaNeta = deudaBase - fiftyPorMar + fiftyPorJuan;
+  var mitad = total / 2;
+  var difJuan = juanTotal - mitad;
+  var mesCerrado = !!fiftyMonths[getMonthKey(filterMes, filterAnyo)];
 
   var html = '<div class="balance-content">';
+
+  // Toggle button
+  html += '<div style="text-align:center;margin-bottom:12px">' +
+    '<button class="btn ' + (mesCerrado ? 'btn-secondary' : 'btn-primary') + '" id="btnToggleFifty">' +
+      (mesCerrado ? 'Reabrir mes' : 'Cerrar mes (Fifty)') +
+    '</button>' +
+  '</div>';
 
   // Total card
   html += '<div class="balance-card">' +
     '<div class="balance-total">Gastos totales ' + MESES[filterMes] + ' ' + filterAnyo + '</div>' +
     '<div class="balance-amount">' + total.toFixed(2) + '\u20AC</div>' +
-    '<div class="balance-half">' + gastosCount + ' gastos \u00B7 ' + mitad.toFixed(2) + '\u20AC cada uno</div>' +
+    '<div class="balance-half">' + filtered.length + ' gastos \u00B7 ' + mitad.toFixed(2) + '\u20AC cada uno</div>' +
   '</div>';
 
   // Per person
@@ -541,12 +475,12 @@ function renderBalance() {
     '<div class="balance-person">' +
       '<div class="person-name">Pagado por Juan</div>' +
       '<div class="person-amount" style="color:#1d4ed8">' + juanTotal.toFixed(2) + '\u20AC</div>' +
-      '<div class="person-label">' + (juanSinFifty > mitad ? 'Pag\u00F3 de m\u00E1s' : (juanSinFifty < mitad ? 'Pag\u00F3 de menos' : 'Justo')) + '</div>' +
+      '<div class="person-label">' + (juanTotal > mitad ? 'Pag\u00F3 de m\u00E1s' : (juanTotal < mitad ? 'Pag\u00F3 de menos' : 'Justo')) + '</div>' +
     '</div>' +
     '<div class="balance-person">' +
       '<div class="person-name">Pagado por Mar</div>' +
       '<div class="person-amount" style="color:#db2777">' + marTotal.toFixed(2) + '\u20AC</div>' +
-      '<div class="person-label">' + ((totalSinFifty - juanSinFifty) > mitad ? 'Pag\u00F3 de m\u00E1s' : ((totalSinFifty - juanSinFifty) < mitad ? 'Pag\u00F3 de menos' : 'Justo')) + '</div>' +
+      '<div class="person-label">' + (marTotal > mitad ? 'Pag\u00F3 de m\u00E1s' : (marTotal < mitad ? 'Pag\u00F3 de menos' : 'Justo')) + '</div>' +
     '</div>' +
   '</div>';
 
@@ -557,28 +491,38 @@ function renderBalance() {
       '<div class="result-text">No hay gastos</div>' +
       '<div class="result-sub">A\u00F1ade gastos para ver el balance</div>' +
     '</div>';
-  } else if (Math.abs(deudaNeta) < 0.01) {
+  } else if (mesCerrado) {
+    html += '<div class="balance-result zero">' +
+      '<div class="result-icon">&#x2705;</div>' +
+      '<div class="result-text">Mes cerrado</div>' +
+      '<div class="result-sub">Est\u00E1is empatados</div>' +
+    '</div>';
+  } else if (Math.abs(difJuan) < 0.01) {
     html += '<div class="balance-result zero">' +
       '<div class="result-icon">&#x2705;</div>' +
       '<div class="result-text">Est\u00E1is empatados</div>' +
       '<div class="result-sub">Cada uno ha pagado exactamente la mitad</div>' +
     '</div>';
-  } else if (deudaNeta > 0) {
+  } else if (difJuan > 0) {
     html += '<div class="balance-result positive">' +
       '<div class="result-icon">&#x1F449;</div>' +
       '<div class="result-text">Mar debe pagar a Juan</div>' +
-      '<div class="result-sub" style="font-size:20px;font-weight:700;color:#16a34a;margin-top:4px">' + deudaNeta.toFixed(2) + '\u20AC</div>' +
+      '<div class="result-sub" style="font-size:20px;font-weight:700;color:#16a34a;margin-top:4px">' + difJuan.toFixed(2) + '\u20AC</div>' +
     '</div>';
   } else {
     html += '<div class="balance-result negative">' +
       '<div class="result-icon">&#x1F448;</div>' +
       '<div class="result-text">Juan debe pagar a Mar</div>' +
-      '<div class="result-sub" style="font-size:20px;font-weight:700;color:#d97706;margin-top:4px">' + Math.abs(deudaNeta).toFixed(2) + '\u20AC</div>' +
+      '<div class="result-sub" style="font-size:20px;font-weight:700;color:#d97706;margin-top:4px">' + Math.abs(difJuan).toFixed(2) + '\u20AC</div>' +
     '</div>';
   }
 
   html += '</div>';
   container.innerHTML = html;
+
+  // Bind toggle
+  var btn = document.getElementById('btnToggleFifty');
+  if (btn) btn.addEventListener('click', toggleFiftyMonth);
 }
 
 // ========== RENDER: STATS ==========
@@ -894,21 +838,8 @@ function init() {
       btn.dataset.categoria = CATEGORIAS[c].id;
       btn.innerHTML = '<span class="cat-emoji">' + CATEGORIAS[c].icono + '</span>' + CATEGORIAS[c].nombre;
       btn.addEventListener('click', function() {
-        if (this.dataset.categoria === 'fifty') {
-          var mes = parseInt(document.getElementById('inputMes').value);
-          var anyo = parseInt(document.getElementById('inputAnyo').value);
-          if (!calcFiftyBalance(mes, anyo)) {
-            showToast('No hay desbalance que ajustar este mes');
-            return;
-          }
-        }
         catGrid.querySelectorAll('.categoria-option').forEach(function(el) { el.classList.remove('selected'); });
         this.classList.add('selected');
-        if (this.dataset.categoria === 'fifty') {
-          setFiftyFields();
-        } else {
-          clearFiftyFields();
-        }
       });
       catGrid.appendChild(btn);
     }

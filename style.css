@@ -444,8 +444,6 @@ header {
 .gasto-item.categoria-ocio { border-left-color: #f59e0b; }
 .gasto-item.categoria-hijo { border-left-color: #ec4899; }
 .gasto-item.categoria-otros { border-left-color: #8b5cf6; }
-.gasto-item.categoria-fifty { border-left-color: #2ecc71; }
-
 /* ========== BALANCE VIEW ========== */
 .balance-content {
   padding: 0;
