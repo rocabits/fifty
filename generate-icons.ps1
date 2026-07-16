@@ -15,10 +15,10 @@ function New-Icon($size, $outputPath) {
   $wb = New-Object System.Drawing.SolidBrush($white)
   $gb = New-Object System.Drawing.SolidBrush($green)
 
-  # White circle
+  # White circle (r=38, centered)
   $g.FillEllipse($wb, [float]((50-38)*$s), [float]((50-38)*$s), [float](76*$s), [float](76*$s))
 
-  # "50" text
+  # "50" text centered
   $fontSize = [float](36*$s)
   $font = New-Object System.Drawing.Font("Segoe UI", $fontSize, [System.Drawing.FontStyle]::Bold)
   $fmt = New-Object System.Drawing.StringFormat
@@ -31,6 +31,7 @@ function New-Icon($size, $outputPath) {
   $bmp.Save($outputPath, [System.Drawing.Imaging.ImageFormat]::Png)
 
   $wb.Dispose()
+  $gb.Dispose()
   $g.Dispose(); $bmp.Dispose()
 }
 

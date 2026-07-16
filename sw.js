@@ -6,6 +6,7 @@ var URLS_TO_CACHE = [
   './script.js',
   './config.js',
   './manifest.json',
+  './favicon.svg',
   './icon-192.png',
   './icon-512.png'
 ];

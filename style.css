@@ -285,18 +285,6 @@ header {
   outline: none;
 }
 
-/* Summary bar */
-.summary-bar {
-  padding: 8px 16px;
-  background: var(--card-bg);
-  text-align: center;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-light);
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
-}
-
 /* Main content */
 .main-content {
   flex: 1;
@@ -438,13 +426,7 @@ header {
 .gasto-item .gasto-actions {
   display: flex;
   gap: 2px;
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-
-.gasto-item:hover .gasto-actions,
-.gasto-item:focus-within .gasto-actions {
-  opacity: 1;
+  flex-shrink: 0;
 }
 
 .gasto-action-btn {
@@ -477,9 +459,11 @@ header {
 
 /* Category border colors */
 .gasto-item.categoria-casa { border-left-color: #3b82f6; }
+.gasto-item.categoria-comida { border-left-color: #ef4444; }
 .gasto-item.categoria-ocio { border-left-color: #f59e0b; }
 .gasto-item.categoria-hijo { border-left-color: #ec4899; }
 .gasto-item.categoria-otros { border-left-color: #8b5cf6; }
+.gasto-item.categoria-fifty { border-left-color: #2ecc71; }
 
 /* ========== BALANCE VIEW ========== */
 .balance-content {
@@ -772,8 +756,8 @@ header {
 /* ========== GASTO MODAL ========== */
 .categoria-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
   padding: 4px 0;
 }
 

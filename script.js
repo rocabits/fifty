@@ -6,9 +6,11 @@ var ADMIN_EMAIL = 'roca.jlr@gmail.com';
 
 var CATEGORIAS = [
   { id: 'casa', nombre: 'Casa', icono: '\u{1F3E0}' },
+  { id: 'comida', nombre: 'Comida', icono: '\u{1F6D2}' },
   { id: 'ocio', nombre: 'Ocio', icono: '\u{1F389}' },
   { id: 'hijo', nombre: 'Hijo', icono: '\u{1F476}' },
-  { id: 'otros', nombre: 'Otros', icono: '\u{1F4E6}' }
+  { id: 'otros', nombre: 'Otros', icono: '\u{1F4E6}' },
+  { id: 'fifty', nombre: 'Fifty', icono: '<b style="color:#2ecc71">50</b>' }
 ];
 
 var MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -16,6 +18,7 @@ var currentYear = new Date().getFullYear();
 
 // ========== STATE ==========
 var supabaseClient = null;
+var supabaseChannel = null;
 var currentUserEmail = null;
 var gastos = [];
 var nextGastoId = 1;
@@ -106,6 +109,33 @@ function supabaseLoad() {
     }).catch(function() { return null; });
 }
 
+function supabaseOnChange(payload) {
+  if (!payload.new || !payload.new.data) return;
+  var incoming = payload.new.data;
+  if (!incoming.gastos) return;
+  gastos = incoming.gastos;
+  calcNextId();
+  cacheGastos(gastos);
+  refreshCurrentView();
+}
+
+function supabaseSubscribe() {
+  if (!supabaseClient || !currentUserEmail) return;
+  supabaseChannel = supabaseClient.channel('fifty-changes')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'app_data', filter: 'app_id=eq.' + APP_ID },
+      supabaseOnChange
+    )
+    .subscribe();
+}
+
+function supabaseUnsubscribe() {
+  if (supabaseChannel) {
+    supabaseClient.removeChannel(supabaseChannel);
+    supabaseChannel = null;
+  }
+}
+
 // ========== AUTH UI ==========
 function showLogin() {
   document.getElementById('viewLogin').classList.remove('hidden');
@@ -168,11 +198,82 @@ function getAnyoActual() {
   return currentYear;
 }
 
+// ========== FIFTY AUTO-CALC ==========
+function isFiftyCategory() {
+  var sel = document.querySelector('#categoriaGrid .categoria-option.selected');
+  return sel && sel.dataset.categoria === 'fifty';
+}
+
+function calcFiftyBalance(mes, anyo) {
+  var filtered = gastos.filter(function(g) {
+    return g.mes === mes && g.anyo === anyo && g.categoria !== 'fifty';
+  });
+  var total = 0, juanTotal = 0;
+  for (var i = 0; i < filtered.length; i++) {
+    total += filtered[i].importe;
+    if (filtered[i].pagador === 'Juan') juanTotal += filtered[i].importe;
+  }
+  var mitad = total / 2;
+  if (total === 0) return null;
+  var difJuan = juanTotal - mitad;
+  if (Math.abs(difJuan) < 0.01) return null;
+  if (difJuan > 0) return { importe: difJuan, pagador: 'Mar' };
+  return { importe: -difJuan, pagador: 'Juan' };
+}
+
+function setFiftyFields() {
+  var mes = parseInt(document.getElementById('inputMes').value);
+  var anyo = parseInt(document.getElementById('inputAnyo').value);
+  var balance = calcFiftyBalance(mes, anyo);
+
+  var importeInput = document.getElementById('inputImporte');
+  var conceptoInput = document.getElementById('inputConcepto');
+  var pagBtns = document.querySelectorAll('#pagadorSelect .pagador-option');
+
+  if (!balance) {
+    importeInput.value = '';
+    importeInput.disabled = true;
+    importeInput.placeholder = 'Est\u00E1is empatados';
+    conceptoInput.value = 'Fifty';
+    conceptoInput.disabled = true;
+    pagBtns.forEach(function(b) { b.classList.remove('selected'); b.style.pointerEvents = 'none'; });
+    return;
+  }
+
+  importeInput.value = balance.importe.toFixed(2);
+  importeInput.disabled = true;
+  importeInput.placeholder = '0.00';
+  conceptoInput.value = 'Fifty';
+  conceptoInput.disabled = true;
+  pagBtns.forEach(function(b) { b.classList.remove('selected'); b.style.pointerEvents = 'none'; });
+  var pagBtn = document.querySelector('#pagadorSelect .pagador-option[data-pagador="' + balance.pagador + '"]');
+  if (pagBtn) pagBtn.classList.add('selected');
+}
+
+function clearFiftyFields() {
+  var importeInput = document.getElementById('inputImporte');
+  var conceptoInput = document.getElementById('inputConcepto');
+  var pagBtns = document.querySelectorAll('#pagadorSelect .pagador-option');
+
+  importeInput.disabled = false;
+  importeInput.placeholder = '0.00';
+  if (importeInput.value === '' || conceptoInput.value === 'Fifty') {
+    importeInput.value = '';
+    conceptoInput.value = '';
+  }
+  conceptoInput.disabled = false;
+  pagBtns.forEach(function(b) { b.style.pointerEvents = ''; });
+}
+
 // ========== GASTO CRUD ==========
 function showGastoModal(id) {
   editingGastoId = id || null;
   var modal = document.getElementById('gastoModal');
   document.getElementById('gastoModalTitle').textContent = id ? 'Editar gasto' : 'Nuevo gasto';
+
+  // Default mes/anyo from current filter
+  document.getElementById('inputMes').value = filterMes;
+  document.getElementById('inputAnyo').value = filterAnyo;
 
   document.getElementById('inputConcepto').value = '';
   document.getElementById('inputImporte').value = '';
@@ -205,6 +306,12 @@ function showGastoModal(id) {
       document.getElementById('inputAnyo').value = gasto.anyo;
     }
   }
+
+  // Apply Fifty logic if category is selected
+  setTimeout(function() {
+    if (isFiftyCategory()) setFiftyFields();
+    else clearFiftyFields();
+  }, 50);
 
   modal.classList.add('open');
   document.getElementById('fabAdd').style.display = 'none';
@@ -327,7 +434,6 @@ function refreshCurrentView() {
   if (currentView === 'gastos') renderGastos();
   else if (currentView === 'balance') renderBalance();
   else if (currentView === 'stats') renderStats();
-  updateSummary();
 }
 
 // ========== RENDER: GASTOS ==========
@@ -560,17 +666,6 @@ function renderStats() {
   container.innerHTML = html;
 }
 
-// ========== SUMMARY ==========
-function updateSummary() {
-  var filtered = currentView === 'gastos' || currentView === 'balance' ? getFilteredGastos() : gastos;
-  var total = 0;
-  for (var i = 0; i < filtered.length; i++) total += filtered[i].importe;
-  var el = document.getElementById('summaryText');
-  if (el) {
-    el.textContent = filtered.length + ' gastos \u00B7 ' + total.toFixed(2) + '\u20AC';
-  }
-}
-
 // ========== NAVIGATION ==========
 function switchView(view) {
   currentView = view;
@@ -588,8 +683,6 @@ function switchView(view) {
   });
 
   // Handle special views
-  document.getElementById('summaryBar').classList.remove('hidden');
-
   if (view === 'gastos') {
     document.getElementById('viewGastos').classList.add('active');
     document.getElementById('filterBar').style.display = 'flex';
@@ -621,11 +714,8 @@ function switchView(view) {
     document.getElementById('fabAdd').style.display = '';
     document.getElementById('btnBack').classList.add('visible');
     document.getElementById('emptyState').classList.add('hidden');
-    document.getElementById('summaryBar').classList.add('hidden');
     renderUsuarios();
   }
-
-  updateSummary();
 }
 
 // ========== TOAST ==========
@@ -752,6 +842,7 @@ function removeUsuario(email) {
 }
 
 function logout() {
+  supabaseUnsubscribe();
   if (supabaseClient) {
     supabaseClient.auth.signOut();
   }
@@ -779,8 +870,21 @@ function init() {
       btn.dataset.categoria = CATEGORIAS[c].id;
       btn.innerHTML = '<span class="cat-emoji">' + CATEGORIAS[c].icono + '</span>' + CATEGORIAS[c].nombre;
       btn.addEventListener('click', function() {
+        if (this.dataset.categoria === 'fifty') {
+          var mes = parseInt(document.getElementById('inputMes').value);
+          var anyo = parseInt(document.getElementById('inputAnyo').value);
+          if (!calcFiftyBalance(mes, anyo)) {
+            showToast('No hay desbalance que ajustar este mes');
+            return;
+          }
+        }
         catGrid.querySelectorAll('.categoria-option').forEach(function(el) { el.classList.remove('selected'); });
         this.classList.add('selected');
+        if (this.dataset.categoria === 'fifty') {
+          setFiftyFields();
+        } else {
+          clearFiftyFields();
+        }
       });
       catGrid.appendChild(btn);
     }
@@ -795,11 +899,15 @@ function init() {
     });
   });
 
+  // Fifty auto-recalc on mes/anyo change
+  var inputMes = document.getElementById('inputMes');
+  var inputAnyo = document.getElementById('inputAnyo');
+  if (inputMes) inputMes.addEventListener('change', function() { if (isFiftyCategory()) setFiftyFields(); });
+  if (inputAnyo) inputAnyo.addEventListener('change', function() { if (isFiftyCategory()) setFiftyFields(); });
+
   // Populate month/year selects
   var filterMesSel = document.getElementById('filterMes');
   var filterAnyoSel = document.getElementById('filterAnyo');
-  var inputMes = document.getElementById('inputMes');
-  var inputAnyo = document.getElementById('inputAnyo');
   var statsDesdeMes = document.getElementById('statsDesdeMes');
   var statsDesdeAnyo = document.getElementById('statsDesdeAnyo');
   var statsHastaMes = document.getElementById('statsHastaMes');
@@ -844,6 +952,7 @@ function init() {
       currentUserEmail = email;
 
       loadGastos().then(function() {
+        supabaseSubscribe();
         hideLogin();
         switchView('gastos');
         document.getElementById('fabAdd').style.display = '';
