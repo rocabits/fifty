@@ -206,19 +206,25 @@ function isFiftyCategory() {
 
 function calcFiftyBalance(mes, anyo) {
   var filtered = gastos.filter(function(g) {
-    return g.mes === mes && g.anyo === anyo && g.categoria !== 'fifty';
+    return g.mes === mes && g.anyo === anyo;
   });
-  var total = 0, juanTotal = 0;
+  var totalSinFifty = 0, juanSinFifty = 0;
+  var fiftyPorMar = 0, fiftyPorJuan = 0;
   for (var i = 0; i < filtered.length; i++) {
-    total += filtered[i].importe;
-    if (filtered[i].pagador === 'Juan') juanTotal += filtered[i].importe;
+    if (filtered[i].categoria === 'fifty') {
+      if (filtered[i].pagador === 'Mar') fiftyPorMar += filtered[i].importe;
+      else fiftyPorJuan += filtered[i].importe;
+    } else {
+      totalSinFifty += filtered[i].importe;
+      if (filtered[i].pagador === 'Juan') juanSinFifty += filtered[i].importe;
+    }
   }
-  var mitad = total / 2;
-  if (total === 0) return null;
-  var difJuan = juanTotal - mitad;
-  if (Math.abs(difJuan) < 0.01) return null;
-  if (difJuan > 0) return { importe: difJuan, pagador: 'Mar' };
-  return { importe: -difJuan, pagador: 'Juan' };
+  var mitad = totalSinFifty / 2;
+  if (totalSinFifty === 0) return null;
+  var deudaNeta = (juanSinFifty - mitad) - fiftyPorMar + fiftyPorJuan;
+  if (Math.abs(deudaNeta) < 0.01) return null;
+  if (deudaNeta > 0) return { importe: deudaNeta, pagador: 'Mar' };
+  return { importe: -deudaNeta, pagador: 'Juan' };
 }
 
 function setFiftyFields() {
@@ -489,22 +495,37 @@ function renderGastos() {
 function renderBalance() {
   var container = document.getElementById('balanceContent');
   var filtered = getFilteredGastos();
-  var total = 0;
-  var juanTotal = 0;
-  var marTotal = 0;
+
+  // Totals including all categories
+  var total = 0, juanTotal = 0, marTotal = 0;
+  // Non-Fifty totals for split calculation
+  var totalSinFifty = 0, juanSinFifty = 0, fifties = [];
 
   for (var i = 0; i < filtered.length; i++) {
-    if (filtered[i].categoria === 'fifty') continue;
-    total += filtered[i].importe;
-    if (filtered[i].pagador === 'Juan') juanTotal += filtered[i].importe;
-    else marTotal += filtered[i].importe;
+    var g = filtered[i];
+    total += g.importe;
+    if (g.pagador === 'Juan') juanTotal += g.importe;
+    else marTotal += g.importe;
+
+    if (g.categoria === 'fifty') {
+      fifties.push(g);
+    } else {
+      totalSinFifty += g.importe;
+      if (g.pagador === 'Juan') juanSinFifty += g.importe;
+    }
   }
 
   var gastosCount = filtered.filter(function(g) { return g.categoria !== 'fifty'; }).length;
+  var mitad = totalSinFifty / 2;
+  var deudaBase = juanSinFifty - mitad; // >0: Mar owes Juan, <0: Juan owes Mar
 
-  var mitad = total / 2;
-  var difJuan = juanTotal - mitad;
-  var difMar = marTotal - mitad;
+  // Net Fifty settlements
+  var fiftyPorMar = 0, fiftyPorJuan = 0;
+  for (var f = 0; f < fifties.length; f++) {
+    if (fifties[f].pagador === 'Mar') fiftyPorMar += fifties[f].importe;
+    else fiftyPorJuan += fifties[f].importe;
+  }
+  var deudaNeta = deudaBase - fiftyPorMar + fiftyPorJuan;
 
   var html = '<div class="balance-content">';
 
@@ -520,12 +541,12 @@ function renderBalance() {
     '<div class="balance-person">' +
       '<div class="person-name">Pagado por Juan</div>' +
       '<div class="person-amount" style="color:#1d4ed8">' + juanTotal.toFixed(2) + '\u20AC</div>' +
-      '<div class="person-label">' + (juanTotal > mitad ? 'Pag\u00F3 de m\u00E1s' : (juanTotal < mitad ? 'Pag\u00F3 de menos' : 'Justo')) + '</div>' +
+      '<div class="person-label">' + (juanSinFifty > mitad ? 'Pag\u00F3 de m\u00E1s' : (juanSinFifty < mitad ? 'Pag\u00F3 de menos' : 'Justo')) + '</div>' +
     '</div>' +
     '<div class="balance-person">' +
       '<div class="person-name">Pagado por Mar</div>' +
       '<div class="person-amount" style="color:#db2777">' + marTotal.toFixed(2) + '\u20AC</div>' +
-      '<div class="person-label">' + (marTotal > mitad ? 'Pag\u00F3 de m\u00E1s' : (marTotal < mitad ? 'Pag\u00F3 de menos' : 'Justo')) + '</div>' +
+      '<div class="person-label">' + ((totalSinFifty - juanSinFifty) > mitad ? 'Pag\u00F3 de m\u00E1s' : ((totalSinFifty - juanSinFifty) < mitad ? 'Pag\u00F3 de menos' : 'Justo')) + '</div>' +
     '</div>' +
   '</div>';
 
@@ -536,23 +557,23 @@ function renderBalance() {
       '<div class="result-text">No hay gastos</div>' +
       '<div class="result-sub">A\u00F1ade gastos para ver el balance</div>' +
     '</div>';
-  } else if (Math.abs(difJuan) < 0.01) {
+  } else if (Math.abs(deudaNeta) < 0.01) {
     html += '<div class="balance-result zero">' +
       '<div class="result-icon">&#x2705;</div>' +
       '<div class="result-text">Est\u00E1is empatados</div>' +
       '<div class="result-sub">Cada uno ha pagado exactamente la mitad</div>' +
     '</div>';
-  } else if (difJuan > 0) {
+  } else if (deudaNeta > 0) {
     html += '<div class="balance-result positive">' +
       '<div class="result-icon">&#x1F449;</div>' +
       '<div class="result-text">Mar debe pagar a Juan</div>' +
-      '<div class="result-sub" style="font-size:20px;font-weight:700;color:#16a34a;margin-top:4px">' + difJuan.toFixed(2) + '\u20AC</div>' +
+      '<div class="result-sub" style="font-size:20px;font-weight:700;color:#16a34a;margin-top:4px">' + deudaNeta.toFixed(2) + '\u20AC</div>' +
     '</div>';
   } else {
     html += '<div class="balance-result negative">' +
       '<div class="result-icon">&#x1F448;</div>' +
       '<div class="result-text">Juan debe pagar a Mar</div>' +
-      '<div class="result-sub" style="font-size:20px;font-weight:700;color:#d97706;margin-top:4px">' + Math.abs(difJuan).toFixed(2) + '\u20AC</div>' +
+      '<div class="result-sub" style="font-size:20px;font-weight:700;color:#d97706;margin-top:4px">' + Math.abs(deudaNeta).toFixed(2) + '\u20AC</div>' +
     '</div>';
   }
 
@@ -573,11 +594,8 @@ function renderStats() {
   var total = 0;
   var juanTotal = 0;
   var marTotal = 0;
-  var gastosCount = 0;
 
   for (var i = 0; i < filtered.length; i++) {
-    if (filtered[i].categoria === 'fifty') continue;
-    gastosCount++;
     total += filtered[i].importe;
     if (filtered[i].pagador === 'Juan') juanTotal += filtered[i].importe;
     else marTotal += filtered[i].importe;
@@ -597,7 +615,7 @@ function renderStats() {
   // Summary cards
   html += '<div class="stats-summary">' +
     '<div class="stats-summary-card"><div class="stats-label">Total</div><div class="stats-value">' + total.toFixed(2) + '\u20AC</div></div>' +
-    '<div class="stats-summary-card"><div class="stats-label">Gastos</div><div class="stats-value">' + gastosCount + '</div></div>' +
+    '<div class="stats-summary-card"><div class="stats-label">Gastos</div><div class="stats-value">' + filtered.length + '</div></div>' +
     '<div class="stats-summary-card"><div class="stats-label" style="color:#1d4ed8">Juan</div><div class="stats-value" style="color:#1d4ed8">' + juanTotal.toFixed(2) + '\u20AC</div></div>' +
     '<div class="stats-summary-card"><div class="stats-label" style="color:#db2777">Mar</div><div class="stats-value" style="color:#db2777">' + marTotal.toFixed(2) + '\u20AC</div></div>' +
   '</div>';
