@@ -851,71 +851,6 @@ function logout() {
   showLogin();
 }
 
-// ========== PULL TO REFRESH ==========
-var pullState = { startY: 0, pulling: false, moved: false };
-
-function refreshData() {
-  showToast('Actualizando...');
-  supabaseLoad().then(function(data) {
-    if (data && data.gastos) {
-      gastos = data.gastos;
-      calcNextId();
-      cacheGastos(gastos);
-    }
-    refreshCurrentView();
-    showToast('Actualizado');
-  }).catch(function() {
-    showToast('Error al actualizar');
-  });
-}
-
-function initPullToRefresh() {
-  var el = document.getElementById('mainContent');
-  if (!el) return;
-
-  el.addEventListener('touchstart', function(e) {
-    if (el.scrollTop > 0) return;
-    pullState.startY = e.touches[0].clientY;
-    pullState.pulling = true;
-    pullState.moved = false;
-  }, { passive: true });
-
-  el.addEventListener('touchmove', function(e) {
-    if (!pullState.pulling) return;
-    var diff = e.touches[0].clientY - pullState.startY;
-    if (diff <= 0) { pullState.pulling = false; return; }
-    e.preventDefault();
-    pullState.moved = true;
-    var indicator = document.getElementById('pullIndicator');
-    if (!indicator) return;
-    if (diff > 60) {
-      indicator.classList.add('ready');
-      indicator.innerHTML = '<svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2v4"/></svg> Suelta para actualizar';
-    } else {
-      indicator.classList.remove('ready');
-      indicator.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 12 5 8 9 12"/><line x1="5" y1="8" x2="5" y2="20"/></svg> Arrastra para actualizar';
-    }
-    indicator.style.transform = 'translateY(' + Math.min(diff, 80) + 'px)';
-    indicator.style.opacity = Math.min(diff / 60, 1);
-  }, { passive: false });
-
-  el.addEventListener('touchend', function(e) {
-    if (!pullState.pulling || !pullState.moved) { pullState.pulling = false; return; }
-    var diff = e.changedTouches[0].clientY - pullState.startY;
-    pullState.pulling = false;
-    var indicator = document.getElementById('pullIndicator');
-    if (indicator) {
-      indicator.style.transform = '';
-      indicator.style.opacity = '';
-      indicator.classList.remove('ready');
-      indicator.innerHTML = '';
-    }
-    if (diff > 60) {
-      refreshData();
-    }
-  }, { passive: true });
-}
-
 // ========== SERVICE WORKER ==========
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');
@@ -1018,7 +953,6 @@ function init() {
 
       loadGastos().then(function() {
         supabaseSubscribe();
-        initPullToRefresh();
         hideLogin();
         switchView('gastos');
         document.getElementById('fabAdd').style.display = '';
