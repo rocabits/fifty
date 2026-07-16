@@ -494,10 +494,13 @@ function renderBalance() {
   var marTotal = 0;
 
   for (var i = 0; i < filtered.length; i++) {
+    if (filtered[i].categoria === 'fifty') continue;
     total += filtered[i].importe;
     if (filtered[i].pagador === 'Juan') juanTotal += filtered[i].importe;
     else marTotal += filtered[i].importe;
   }
+
+  var gastosCount = filtered.filter(function(g) { return g.categoria !== 'fifty'; }).length;
 
   var mitad = total / 2;
   var difJuan = juanTotal - mitad;
@@ -509,7 +512,7 @@ function renderBalance() {
   html += '<div class="balance-card">' +
     '<div class="balance-total">Gastos totales ' + MESES[filterMes] + ' ' + filterAnyo + '</div>' +
     '<div class="balance-amount">' + total.toFixed(2) + '\u20AC</div>' +
-    '<div class="balance-half">' + filtered.length + ' gastos \u00B7 ' + mitad.toFixed(2) + '\u20AC cada uno</div>' +
+    '<div class="balance-half">' + gastosCount + ' gastos \u00B7 ' + mitad.toFixed(2) + '\u20AC cada uno</div>' +
   '</div>';
 
   // Per person
@@ -570,8 +573,11 @@ function renderStats() {
   var total = 0;
   var juanTotal = 0;
   var marTotal = 0;
+  var gastosCount = 0;
 
   for (var i = 0; i < filtered.length; i++) {
+    if (filtered[i].categoria === 'fifty') continue;
+    gastosCount++;
     total += filtered[i].importe;
     if (filtered[i].pagador === 'Juan') juanTotal += filtered[i].importe;
     else marTotal += filtered[i].importe;
@@ -591,7 +597,7 @@ function renderStats() {
   // Summary cards
   html += '<div class="stats-summary">' +
     '<div class="stats-summary-card"><div class="stats-label">Total</div><div class="stats-value">' + total.toFixed(2) + '\u20AC</div></div>' +
-    '<div class="stats-summary-card"><div class="stats-label">Gastos</div><div class="stats-value">' + filtered.length + '</div></div>' +
+    '<div class="stats-summary-card"><div class="stats-label">Gastos</div><div class="stats-value">' + gastosCount + '</div></div>' +
     '<div class="stats-summary-card"><div class="stats-label" style="color:#1d4ed8">Juan</div><div class="stats-value" style="color:#1d4ed8">' + juanTotal.toFixed(2) + '\u20AC</div></div>' +
     '<div class="stats-summary-card"><div class="stats-label" style="color:#db2777">Mar</div><div class="stats-value" style="color:#db2777">' + marTotal.toFixed(2) + '\u20AC</div></div>' +
   '</div>';
