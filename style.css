@@ -253,6 +253,30 @@ header {
   white-space: nowrap;
 }
 
+/* ========== PULL TO REFRESH ========== */
+#pullIndicator {
+  position: absolute;
+  top: -50px;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 50px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-light);
+  background: var(--card-bg);
+  transition: none;
+  pointer-events: none;
+}
+
+#pullIndicator.ready {
+  color: var(--primary);
+}
+
 /* ========== FILTER BAR ========== */
 .filter-bar {
   display: flex;
@@ -292,6 +316,7 @@ header {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 16px 16px 80px;
+  position: relative;
 }
 
 /* Empty state */
