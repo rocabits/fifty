@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>FIFTY</title>
+  <meta name="theme-color" content="#2ecc71">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ========== LOGIN VIEW ========== -->
+  <div id="viewLogin" class="view-login">
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="login-logo-btn">
+            <svg class="login-icon" viewBox="0 0 100 100" fill="white">
+              <circle cx="50" cy="50" r="38"/>
+              <text x="50" y="60" text-anchor="middle" font-size="36" font-weight="800" fill="#2ecc71" font-family="system-ui, -apple-system, sans-serif">50</text>
+            </svg>
+          </div>
+          <h1 class="login-title">FIFTY</h1>
+        </div>
+        <button class="btn-google" id="btnGoogleLogin">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Iniciar sesi&oacute;n
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== MAIN APP ========== -->
+  <div id="viewApp" class="view-app hidden">
+    <div id="app">
+      <header>
+        <div class="header-inner">
+          <div class="header-left">
+            <button class="btn-back" id="btnBack" aria-label="Volver">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+            <div class="header-brand">
+              <button class="header-logo-btn" id="btnLogo" aria-label="FIFTY">
+                <svg width="24" height="24" viewBox="0 0 100 100" fill="white">
+                  <circle cx="50" cy="50" r="38"/>
+                  <text x="50" y="60" text-anchor="middle" font-size="36" font-weight="800" fill="#2ecc71" font-family="system-ui, -apple-system, sans-serif">50</text>
+                </svg>
+              </button>
+              <h1 id="headerTitle">FIFTY</h1>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Filter bar -->
+      <div class="filter-bar" id="filterBar">
+        <select id="filterMes" class="filter-select"></select>
+        <select id="filterAnyo" class="filter-select"></select>
+      </div>
+
+      <!-- Summary bar -->
+      <div class="summary-bar" id="summaryBar">
+        <span id="summaryText">Cargando...</span>
+      </div>
+
+      <div class="main-content" id="mainContent">
+        <!-- Empty state -->
+        <div id="emptyState" class="empty-state hidden">
+          <div class="empty-content">
+            <span class="empty-icon">&#x1F4B0;</span>
+            <p class="empty-text">No hay gastos</p>
+            <p class="empty-sub">A&ntilde;ade tu primer gasto</p>
+          </div>
+        </div>
+
+        <!-- Gastos view -->
+        <div id="viewGastos" class="view active">
+          <div id="gastosList"></div>
+        </div>
+
+        <!-- Balance view -->
+        <div id="viewBalance" class="view">
+          <div id="balanceContent"></div>
+        </div>
+
+        <!-- Stats view -->
+        <div id="viewStats" class="view">
+          <div class="stats-filters">
+            <div class="stats-filters-row">
+              <select id="statsDesdeMes" class="filter-select"></select>
+              <select id="statsDesdeAnyo" class="filter-select"></select>
+            </div>
+            <div class="stats-filters-row">
+              <select id="statsHastaMes" class="filter-select"></select>
+              <select id="statsHastaAnyo" class="filter-select"></select>
+            </div>
+            <div class="stats-filters-row">
+              <select id="statsCategoria" class="filter-select">
+                <option value="todas">Todas las categor&iacute;as</option>
+                <option value="casa">&#x1F3E0; Casa</option>
+                <option value="ocio">&#x1F389; Ocio</option>
+                <option value="hijo">&#x1F476; Hijo</option>
+                <option value="otros">&#x1F4E6; Otros</option>
+              </select>
+              <button class="btn btn-primary" id="btnCalcularStats">Calcular</button>
+            </div>
+          </div>
+          <div id="statsContent"></div>
+        </div>
+
+        <!-- Usuarios view -->
+        <div id="viewUsuarios" class="view">
+          <div class="players-list" id="usuariosList"></div>
+        </div>
+      </div>
+
+      <!-- Bottom navigation -->
+      <nav class="bottom-nav" id="bottomNav">
+        <button class="nav-item active" data-view="gastos">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <span>Gastos</span>
+        </button>
+        <button class="nav-item" data-view="balance">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+          </svg>
+          <span>Balance</span>
+        </button>
+        <button class="nav-item" data-view="stats">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <span>Stats</span>
+        </button>
+      </nav>
+
+      <div id="toast"></div>
+    </div>
+  </div>
+
+  <!-- ========== USER MODAL ========== -->
+  <div class="modal" id="modalUsuario">
+    <div class="modal-overlay" id="modalUsuarioOverlay"></div>
+    <div class="modal-panel" id="modalUsuarioPanel">
+      <div class="modal-header">
+        <h2 id="usuarioModalTitle">Nuevo usuario</h2>
+        <div class="modal-header-actions">
+          <button class="modal-header-btn modal-header-btn-save" aria-label="Guardar usuario" type="submit" form="usuarioForm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+          </button>
+          <button class="modal-close" id="modalUsuarioClose" aria-label="Cerrar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <form id="usuarioForm" autocomplete="off">
+        <input type="hidden" id="editUsuarioEmail">
+        <div class="form-group">
+          <label for="inviteEmail">Email</label>
+          <input type="email" id="inviteEmail" placeholder="Email del usuario" required autofocus>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== GASTO MODAL ========== -->
+  <div id="gastoModal" class="modal">
+    <div class="modal-overlay" id="gastoModalOverlay"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="gastoModalTitle">Nuevo gasto</h2>
+        <div class="modal-header-actions">
+          <button class="modal-close" id="btnCancelGasto" title="Cerrar">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <form id="gastoForm">
+        <div class="form-group">
+          <label>Categor&iacute;a</label>
+          <div class="categoria-grid" id="categoriaGrid"></div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group form-group-half">
+            <label for="inputImporte">Importe (&euro;)</label>
+            <input type="number" id="inputImporte" placeholder="0.00" step="0.01" min="0.01" required>
+          </div>
+          <div class="form-group form-group-half">
+            <label for="inputPagador">Pagado por</label>
+            <div class="pagador-select" id="pagadorSelect">
+              <button type="button" class="pagador-option selected" data-pagador="Juan">Juan</button>
+              <button type="button" class="pagador-option" data-pagador="Mar">Mar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group form-group-half">
+            <label for="inputMes">Mes</label>
+            <select id="inputMes" class="form-select"></select>
+          </div>
+          <div class="form-group form-group-half">
+            <label for="inputAnyo">A&ntilde;o</label>
+            <select id="inputAnyo" class="form-select"></select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="inputConcepto">Concepto</label>
+          <input type="text" id="inputConcepto" placeholder="Ej: Compra supermercado" required>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary" id="btnSaveGasto">Guardar</button>
+          <button type="button" class="btn btn-secondary" id="btnCancelGasto2">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== CONFIRM MODAL ========== -->
+  <div class="modal modal-confirm" id="modalConfirm">
+    <div class="modal-overlay" id="modalConfirmOverlay"></div>
+    <div class="modal-panel confirm-panel" id="modalConfirmPanel">
+      <div class="confirm-icon" id="confirmIcon">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      </div>
+      <div class="confirm-text" id="confirmText">&iquest;Est&aacute;s seguro?</div>
+      <div class="confirm-actions">
+        <button class="btn-confirm-cancel" id="btnConfirmCancel">Cancelar</button>
+        <button class="btn-confirm-ok" id="btnConfirmOk">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== FAB ========== -->
+  <button class="fab" id="fabAdd" aria-label="A&ntilde;adir">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
