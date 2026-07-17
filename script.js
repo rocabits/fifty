@@ -666,6 +666,7 @@ function switchView(view) {
     document.getElementById('fabAdd').style.display = 'none';
     document.getElementById('btnBack').classList.remove('visible');
     document.getElementById('headerTitle').textContent = 'FIFTY';
+    document.getElementById('emptyState').classList.add('hidden');
     renderBalance();
   } else if (view === 'stats') {
     document.getElementById('viewStats').classList.add('active');
@@ -674,6 +675,7 @@ function switchView(view) {
     document.getElementById('fabAdd').style.display = 'none';
     document.getElementById('btnBack').classList.remove('visible');
     document.getElementById('headerTitle').textContent = 'FIFTY';
+    document.getElementById('emptyState').classList.add('hidden');
     renderStats();
   } else if (view === 'usuarios') {
     document.getElementById('viewUsuarios').classList.add('active');
