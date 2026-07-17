@@ -1,4 +1,4 @@
-var CACHE_NAME = 'fifty-v2';
+var CACHE_NAME = 'fifty-v3';
 var URLS_TO_CACHE = [
   './',
   './index.html',
@@ -40,8 +40,16 @@ self.addEventListener('message', function (event) {
 
 self.addEventListener('fetch', function (event) {
   event.respondWith(
-    caches.match(event.request).then(function (response) {
-      return response || fetch(event.request);
+    fetch(event.request).then(function (response) {
+      if (response && response.status === 200) {
+        var clone = response.clone();
+        caches.open(CACHE_NAME).then(function (cache) {
+          cache.put(event.request, clone);
+        });
+      }
+      return response;
+    }).catch(function () {
+      return caches.match(event.request);
     })
   );
 });
