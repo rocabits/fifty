@@ -425,19 +425,6 @@ function getMonthKey(mes, anyo) {
   return anyo + '-' + mes;
 }
 
-function updateStatusBadge() {
-  var badge = document.getElementById('statusBadge');
-  if (!badge) return;
-  var key = getMonthKey(filterMes, filterAnyo);
-  if (fiftyMonths[key]) {
-    badge.className = 'status-badge closed';
-    badge.innerHTML = '\uD83D\uDD12 Cerrado';
-  } else {
-    badge.className = 'status-badge open';
-    badge.innerHTML = '\uD83D\uDD13 Abierto';
-  }
-}
-
 function toggleFiftyMonth() {
   var key = getMonthKey(filterMes, filterAnyo);
   if (fiftyMonths[key]) {
@@ -446,7 +433,6 @@ function toggleFiftyMonth() {
     fiftyMonths[key] = true;
   }
   saveToSupabase().then(function() {
-    updateStatusBadge();
     renderBalance();
   });
 }
@@ -455,7 +441,6 @@ function toggleFiftyMonth() {
 function renderBalance() {
   var container = document.getElementById('balanceContent');
   var filtered = getFilteredGastos();
-  updateStatusBadge();
 
   var total = 0, juanTotal = 0, marTotal = 0;
   for (var i = 0; i < filtered.length; i++) {
@@ -672,7 +657,6 @@ function switchView(view) {
   if (view === 'gastos') {
     document.getElementById('viewGastos').classList.add('active');
     document.getElementById('filterBar').style.display = 'flex';
-    document.getElementById('statusBadge').style.display = 'none';
     document.getElementById('bottomNav').style.display = 'flex';
     document.getElementById('fabAdd').style.display = '';
     document.getElementById('btnBack').classList.remove('visible');
@@ -681,7 +665,6 @@ function switchView(view) {
   } else if (view === 'balance') {
     document.getElementById('viewBalance').classList.add('active');
     document.getElementById('filterBar').style.display = 'flex';
-    document.getElementById('statusBadge').style.display = '';
     document.getElementById('bottomNav').style.display = 'flex';
     document.getElementById('fabAdd').style.display = 'none';
     document.getElementById('btnBack').classList.remove('visible');
@@ -973,11 +956,6 @@ function init() {
         filterAnyoSel.addEventListener('change', function() {
           filterAnyo = parseInt(this.value);
           refreshCurrentView();
-        });
-
-        // Status badge click
-        document.getElementById('statusBadge').addEventListener('click', function() {
-          if (currentView === 'balance') toggleFiftyMonth();
         });
 
         // Nav items

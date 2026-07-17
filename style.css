@@ -270,34 +270,6 @@ header {
   outline: none;
 }
 
-.status-badge {
-  display: none;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 4px;
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 700;
-  border-radius: 20px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.status-badge.open {
-  display: inline-flex;
-  background: #e9ecef;
-  color: #666;
-}
-
-.status-badge.closed {
-  display: inline-flex;
-  background: #d4edda;
-  color: #155724;
-}
-
 /* Main content */
 .main-content {
   padding: 16px 16px 80px;
