@@ -270,6 +270,34 @@ header {
   outline: none;
 }
 
+.status-badge {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.status-badge.open {
+  display: inline-flex;
+  background: #e9ecef;
+  color: #666;
+}
+
+.status-badge.closed {
+  display: inline-flex;
+  background: #d4edda;
+  color: #155724;
+}
+
 /* Main content */
 .main-content {
   padding: 16px 16px 80px;
@@ -548,6 +576,80 @@ header {
 
 .balance-result.zero {
   border: 2px solid var(--border);
+}
+
+/* Toggle switch */
+.fifty-toggle-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.fifty-toggle {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fifty-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.fifty-toggle .slider {
+  position: absolute;
+  inset: 0;
+  background: #ccc;
+  border-radius: 28px;
+  transition: background 0.25s;
+}
+
+.fifty-toggle .slider::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.25s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.fifty-toggle input:checked + .slider {
+  background: var(--primary);
+}
+
+.fifty-toggle input:checked + .slider::before {
+  transform: translateX(24px);
+}
+
+.fifty-toggle-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-light);
+  transition: color 0.25s;
+}
+
+.fifty-toggle-label.active {
+  color: var(--primary);
+}
+
+/* Closed month card */
+.balance-card.closed {
+  border: 2px solid var(--primary);
+}
+
+.balance-card.closed .balance-amount {
+  color: var(--primary);
 }
 
 @media (max-width: 480px) {

@@ -425,6 +425,19 @@ function getMonthKey(mes, anyo) {
   return anyo + '-' + mes;
 }
 
+function updateStatusBadge() {
+  var badge = document.getElementById('statusBadge');
+  if (!badge) return;
+  var key = getMonthKey(filterMes, filterAnyo);
+  if (fiftyMonths[key]) {
+    badge.className = 'status-badge closed';
+    badge.innerHTML = '\uD83D\uDD12 Cerrado';
+  } else {
+    badge.className = 'status-badge open';
+    badge.innerHTML = '\uD83D\uDD13 Abierto';
+  }
+}
+
 function toggleFiftyMonth() {
   var key = getMonthKey(filterMes, filterAnyo);
   if (fiftyMonths[key]) {
@@ -433,6 +446,7 @@ function toggleFiftyMonth() {
     fiftyMonths[key] = true;
   }
   saveToSupabase().then(function() {
+    updateStatusBadge();
     renderBalance();
   });
 }
@@ -441,6 +455,7 @@ function toggleFiftyMonth() {
 function renderBalance() {
   var container = document.getElementById('balanceContent');
   var filtered = getFilteredGastos();
+  updateStatusBadge();
 
   var total = 0, juanTotal = 0, marTotal = 0;
   for (var i = 0; i < filtered.length; i++) {
@@ -456,15 +471,18 @@ function renderBalance() {
 
   var html = '<div class="balance-content">';
 
-  // Toggle button
-  html += '<div style="text-align:center;margin-bottom:12px">' +
-    '<button class="btn ' + (mesCerrado ? 'btn-secondary' : 'btn-primary') + '" id="btnToggleFifty">' +
-      (mesCerrado ? 'Reabrir mes' : 'Cerrar mes (Fifty)') +
-    '</button>' +
+  // Toggle switch
+  html += '<div class="fifty-toggle-wrap">' +
+    '<span class="fifty-toggle-label' + (mesCerrado ? '' : ' active') + '">Abierto</span>' +
+    '<label class="fifty-toggle">' +
+      '<input type="checkbox" id="chkFifty"' + (mesCerrado ? ' checked' : '') + '>' +
+      '<span class="slider"></span>' +
+    '</label>' +
+    '<span class="fifty-toggle-label' + (mesCerrado ? ' active' : '') + '">Cerrado</span>' +
   '</div>';
 
   // Total card
-  html += '<div class="balance-card">' +
+  html += '<div class="balance-card' + (mesCerrado ? ' closed' : '') + '">' +
     '<div class="balance-total">Gastos totales ' + MESES[filterMes] + ' ' + filterAnyo + '</div>' +
     '<div class="balance-amount">' + total.toFixed(2) + '\u20AC</div>' +
     '<div class="balance-half">' + filtered.length + ' gastos \u00B7 ' + mitad.toFixed(2) + '\u20AC cada uno</div>' +
@@ -493,8 +511,8 @@ function renderBalance() {
     '</div>';
   } else if (mesCerrado) {
     html += '<div class="balance-result zero">' +
-      '<div class="result-icon">&#x2705;</div>' +
-      '<div class="result-text">Mes cerrado</div>' +
+      '<div class="result-icon">&#x1F389;</div>' +
+      '<div class="result-text" style="color:var(--primary)">\u2705 Mes cerrado</div>' +
       '<div class="result-sub">Est\u00E1is empatados</div>' +
     '</div>';
   } else if (Math.abs(difJuan) < 0.01) {
@@ -521,8 +539,8 @@ function renderBalance() {
   container.innerHTML = html;
 
   // Bind toggle
-  var btn = document.getElementById('btnToggleFifty');
-  if (btn) btn.addEventListener('click', toggleFiftyMonth);
+  var chk = document.getElementById('chkFifty');
+  if (chk) chk.addEventListener('change', toggleFiftyMonth);
 }
 
 // ========== RENDER: STATS ==========
@@ -654,6 +672,7 @@ function switchView(view) {
   if (view === 'gastos') {
     document.getElementById('viewGastos').classList.add('active');
     document.getElementById('filterBar').style.display = 'flex';
+    document.getElementById('statusBadge').style.display = 'none';
     document.getElementById('bottomNav').style.display = 'flex';
     document.getElementById('fabAdd').style.display = '';
     document.getElementById('btnBack').classList.remove('visible');
@@ -662,6 +681,7 @@ function switchView(view) {
   } else if (view === 'balance') {
     document.getElementById('viewBalance').classList.add('active');
     document.getElementById('filterBar').style.display = 'flex';
+    document.getElementById('statusBadge').style.display = '';
     document.getElementById('bottomNav').style.display = 'flex';
     document.getElementById('fabAdd').style.display = 'none';
     document.getElementById('btnBack').classList.remove('visible');
@@ -953,6 +973,11 @@ function init() {
         filterAnyoSel.addEventListener('change', function() {
           filterAnyo = parseInt(this.value);
           refreshCurrentView();
+        });
+
+        // Status badge click
+        document.getElementById('statusBadge').addEventListener('click', function() {
+          if (currentView === 'balance') toggleFiftyMonth();
         });
 
         // Nav items
