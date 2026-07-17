@@ -152,8 +152,8 @@ function hideLogin() {
 // ========== DATA LOADING ==========
 function loadGastos() {
   return supabaseLoad().then(function(data) {
-    if (data && data.gastos && data.gastos.length > 0) {
-      gastos = data.gastos;
+    if (data) {
+      gastos = data.gastos || [];
       fiftyMonths = data.fiftyMonths || {};
       calcNextId();
       cacheGastos(gastos);
