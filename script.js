@@ -458,12 +458,12 @@ function renderBalance() {
 
   // Toggle switch
   html += '<div class="fifty-toggle-wrap">' +
-    '<span class="fifty-toggle-label' + (mesCerrado ? '' : ' active') + '">Abierto</span>' +
+    '<span class="fifty-toggle-label' + (mesCerrado ? '' : ' active') + '">Abierto (No Fifty)</span>' +
     '<label class="fifty-toggle">' +
       '<input type="checkbox" id="chkFifty"' + (mesCerrado ? ' checked' : '') + '>' +
       '<span class="slider"></span>' +
     '</label>' +
-    '<span class="fifty-toggle-label' + (mesCerrado ? ' active' : '') + '">Cerrado</span>' +
+    '<span class="fifty-toggle-label' + (mesCerrado ? ' active' : '') + '">Cerrado (Fifty)</span>' +
   '</div>';
 
   // Total card
